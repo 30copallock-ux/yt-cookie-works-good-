@@ -308,7 +308,7 @@ function openPlayer(video) {
     currentVideoId = video.id;
 
     ytIframe.src =
-        `https://www.youtube.com/embed/${video.id}?autoplay=1&rel=0`;
+    `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0`;
 
     playerTitle.textContent = video.title;
     playerChannel.textContent = video.channel;
