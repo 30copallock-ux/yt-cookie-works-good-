@@ -1,9 +1,10 @@
 
 // ==========================================
 // YOUTUBE CLONE - LIVE YOUTUBE SEARCH
-// Privacy Enhanced Player (youtube-nocookie)
+// Privacy Enhanced Player + Open in New Tab
 // ==========================================
 
+// IMPORTANT: Add your NEW YouTube Data API key here.
 const API_KEY = "AIzaSyCKR6qZ22gUZTnNoJM9JBcx3Tpcpr_B1Oc";
 
 let currentCategory = "all";
@@ -44,10 +45,48 @@ const chips = document.querySelectorAll(".chip");
 const navItems = document.querySelectorAll(".nav-item[data-filter]");
 
 // ==========================================
+// OPEN IN NEW TAB BUTTON
+// ==========================================
+
+const openYoutubeBtn = document.createElement("button");
+
+openYoutubeBtn.id = "open-youtube-btn";
+openYoutubeBtn.type = "button";
+openYoutubeBtn.textContent = "↗ Open in New Tab";
+
+openYoutubeBtn.style.cssText = `
+    padding: 10px 16px;
+    margin-left: 8px;
+    border: none;
+    border-radius: 8px;
+    background: #ff0000;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+`;
+
+if (shareBtn && shareBtn.parentElement) {
+    shareBtn.insertAdjacentElement("afterend", openYoutubeBtn);
+} else if (playerTitle && playerTitle.parentElement) {
+    playerTitle.parentElement.appendChild(openYoutubeBtn);
+}
+
+openYoutubeBtn.addEventListener("click", () => {
+    if (!currentVideoId) return;
+
+    const url = `https://www.youtube.com/watch?v=${encodeURIComponent(currentVideoId)}`;
+
+    window.open(url, "_blank", "noopener,noreferrer");
+});
+
+// ==========================================
 // HELPERS
 // ==========================================
 
 function showToast(message) {
+    if (!toast) return;
+
     toast.textContent = message;
     toast.classList.add("show");
 
@@ -66,6 +105,8 @@ function formatViews(number) {
 }
 
 function formatDuration(iso) {
+    if (!iso) return "0:00";
+
     const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
 
     if (!match) return "0:00";
@@ -163,7 +204,7 @@ async function searchYouTube(query, pageToken = "") {
 
         nextPageToken = data.nextPageToken || null;
 
-        const ids = data.items
+        const ids = (data.items || [])
             .map(item => item.id.videoId)
             .filter(Boolean);
 
@@ -201,7 +242,8 @@ async function searchYouTube(query, pageToken = "") {
             description: video.snippet.description,
             thumbnail:
                 video.snippet.thumbnails.high?.url ||
-                video.snippet.thumbnails.medium?.url,
+                video.snippet.thumbnails.medium?.url ||
+                video.snippet.thumbnails.default?.url,
             category: currentCategory
         }));
 
@@ -297,17 +339,22 @@ function renderVideos(videos, append = false) {
 function openPlayer(video) {
     currentVideoId = video.id;
 
-    // Use YouTube's privacy-enhanced embed domain.
-    // Referrer policy is also set on the iframe in HTML.
     const embedURL = new URL(
-        `https://www.youtube.com/embed/${video.id}`
+        `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}`
     );
 
     embedURL.searchParams.set("autoplay", "1");
     embedURL.searchParams.set("playsinline", "1");
     embedURL.searchParams.set("rel", "0");
-    embedURL.searchParams.set("enablejsapi", "1");
-    embedURL.searchParams.set("origin", window.location.origin);
+
+    // Do not enable the IFrame JavaScript API unless it is needed.
+    ytIframe.referrerPolicy = "strict-origin-when-cross-origin";
+    ytIframe.setAttribute(
+        "allow",
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+    );
+    ytIframe.setAttribute("allowfullscreen", "");
+    ytIframe.setAttribute("loading", "eager");
 
     ytIframe.src = embedURL.toString();
 
@@ -467,7 +514,7 @@ chips.forEach(chip => {
             travel: "travel"
         };
 
-        searchYouTube(searches[currentCategory]);
+        searchYouTube(searches[currentCategory] || "popular videos");
     });
 });
 
@@ -539,8 +586,10 @@ async function displaySavedVideos(ids) {
                         time: formatDate(video.snippet.publishedAt),
                         duration: formatDuration(video.contentDetails.duration),
                         description: video.snippet.description,
-                        thumbnail: video.snippet.thumbnails.high?.url ||
-                            video.snippet.thumbnails.medium?.url
+                        thumbnail:
+                            video.snippet.thumbnails.high?.url ||
+                            video.snippet.thumbnails.medium?.url ||
+                            video.snippet.thumbnails.default?.url
                     };
                 });
             }
