@@ -300,7 +300,7 @@ function openPlayer(video) {
     // Use YouTube's privacy-enhanced embed domain.
     // Referrer policy is also set on the iframe in HTML.
     const embedURL = new URL(
-        `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}`
+        `https://www.youtube.com/embed/${video.id}`
     );
 
     embedURL.searchParams.set("autoplay", "1");
