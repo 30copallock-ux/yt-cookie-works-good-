@@ -1,9 +1,9 @@
 
 // ==========================================
 // YOUTUBE CLONE - LIVE YOUTUBE SEARCH
+// Privacy Enhanced Player (youtube-nocookie)
 // ==========================================
 
-// Paste your Google API key here:
 const API_KEY = "AIzaSyCKR6qZ22gUZTnNoJM9JBcx3Tpcpr_B1Oc";
 
 let currentCategory = "all";
@@ -43,15 +43,15 @@ const toast = document.getElementById("toast");
 const chips = document.querySelectorAll(".chip");
 const navItems = document.querySelectorAll(".nav-item[data-filter]");
 
-// ------------------------------------------
+// ==========================================
 // HELPERS
-// ------------------------------------------
+// ==========================================
 
 function showToast(message) {
     toast.textContent = message;
     toast.classList.add("show");
 
-    setTimeout(() => toast.classList.remove("show"), 2500);
+    setTimeout(() => toast.classList.remove("show"), 3000);
 }
 
 function saveState() {
@@ -62,7 +62,6 @@ function saveState() {
 
 function formatViews(number) {
     if (!number) return "Views unavailable";
-
     return Number(number).toLocaleString() + " views";
 }
 
@@ -71,15 +70,15 @@ function formatDuration(iso) {
 
     if (!match) return "0:00";
 
-    const hours = Number(match[1] || 0);
-    const minutes = Number(match[2] || 0);
-    const seconds = Number(match[3] || 0);
+    const h = Number(match[1] || 0);
+    const m = Number(match[2] || 0);
+    const s = Number(match[3] || 0);
 
-    if (hours) {
-        return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    if (h) {
+        return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
 
-    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 function formatDate(date) {
@@ -96,23 +95,20 @@ function formatDate(date) {
     return `${Math.floor(days / 365)} years ago`;
 }
 
-// ------------------------------------------
+// ==========================================
 // YOUTUBE SEARCH
-// ------------------------------------------
+// ==========================================
 
 async function searchYouTube(query, pageToken = "") {
-
     if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
-        showToast("Please add your YouTube API key!");
+        showToast("Add your YouTube API key!");
         return;
     }
 
-    if (!query.trim()) {
-        showToast("Enter something to search!");
-        return;
-    }
+    if (!query.trim()) return;
 
     searchQuery = query;
+
     videoGrid.innerHTML = `
         <div style="padding:40px;text-align:center;">
             <i class="fa-solid fa-spinner fa-spin"></i>
@@ -146,6 +142,10 @@ async function searchYouTube(query, pageToken = "") {
         params.set("videoCategoryId", categoryIds[currentCategory]);
     }
 
+    if (currentCategory === "shorts") {
+        params.set("videoDuration", "short");
+    }
+
     if (pageToken) {
         params.set("pageToken", pageToken);
     }
@@ -158,9 +158,7 @@ async function searchYouTube(query, pageToken = "") {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(
-                data.error?.message || "YouTube search failed."
-            );
+            throw new Error(data.error?.message || "Search failed");
         }
 
         nextPageToken = data.nextPageToken || null;
@@ -176,23 +174,20 @@ async function searchYouTube(query, pageToken = "") {
             return;
         }
 
-        // Get real video statistics and durations.
-        const detailsParams = new URLSearchParams({
+        const detailParams = new URLSearchParams({
             part: "snippet,statistics,contentDetails",
             id: ids.join(","),
             key: API_KEY
         });
 
-        const detailsResponse = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?${detailsParams}`
+        const detailResponse = await fetch(
+            `https://www.googleapis.com/youtube/v3/videos?${detailParams}`
         );
 
-        const details = await detailsResponse.json();
+        const details = await detailResponse.json();
 
-        if (!detailsResponse.ok) {
-            throw new Error(
-                details.error?.message || "Could not load video details."
-            );
+        if (!detailResponse.ok) {
+            throw new Error(details.error?.message || "Could not load videos");
         }
 
         const videos = details.items.map(video => ({
@@ -214,32 +209,25 @@ async function searchYouTube(query, pageToken = "") {
             videoLibrary[video.id] = video;
         });
 
-        if (pageToken) {
-            renderVideos(videos, true);
-        } else {
-            renderVideos(videos);
-        }
+        renderVideos(videos, !!pageToken);
 
     } catch (error) {
-        console.error(error);
+        console.error("YouTube API error:", error);
 
         videoGrid.innerHTML = "";
         noResults.style.display = "block";
         noResults.querySelector("p").textContent = error.message;
 
-        showToast("YouTube search error");
+        showToast("YouTube search failed");
     }
 }
 
-// ------------------------------------------
-// DISPLAY RESULTS
-// ------------------------------------------
+// ==========================================
+// DISPLAY VIDEOS
+// ==========================================
 
 function renderVideos(videos, append = false) {
-
-    if (!append) {
-        videoGrid.innerHTML = "";
-    }
+    if (!append) videoGrid.innerHTML = "";
 
     noResults.style.display = "none";
 
@@ -249,7 +237,6 @@ function renderVideos(videos, append = false) {
     }
 
     videos.forEach(video => {
-
         const card = document.createElement("div");
         card.className = "video-card";
 
@@ -264,6 +251,10 @@ function renderVideos(videos, append = false) {
         const duration = document.createElement("div");
         duration.className = "duration";
         duration.textContent = video.duration;
+
+        const play = document.createElement("div");
+        play.className = "hover-play";
+        play.innerHTML = '<i class="fa-solid fa-circle-play"></i>';
 
         const info = document.createElement("div");
         info.className = "card-info";
@@ -288,7 +279,7 @@ function renderVideos(videos, append = false) {
         meta.className = "card-meta";
         meta.textContent = `${video.views} • ${video.time}`;
 
-        thumbnailWrap.append(img, duration);
+        thumbnailWrap.append(img, duration, play);
         text.append(title, channel, meta);
         info.append(avatar, text);
         card.append(thumbnailWrap, info);
@@ -299,16 +290,26 @@ function renderVideos(videos, append = false) {
     });
 }
 
-// ------------------------------------------
-// PLAYER
-// ------------------------------------------
+// ==========================================
+// PRIVACY-ENHANCED YOUTUBE PLAYER
+// ==========================================
 
 function openPlayer(video) {
-
     currentVideoId = video.id;
 
-    ytIframe.src =
-    `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0`;
+    // Use YouTube's privacy-enhanced embed domain.
+    // Referrer policy is also set on the iframe in HTML.
+    const embedURL = new URL(
+        `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}`
+    );
+
+    embedURL.searchParams.set("autoplay", "1");
+    embedURL.searchParams.set("playsinline", "1");
+    embedURL.searchParams.set("rel", "0");
+    embedURL.searchParams.set("enablejsapi", "1");
+    embedURL.searchParams.set("origin", window.location.origin);
+
+    ytIframe.src = embedURL.toString();
 
     playerTitle.textContent = video.title;
     playerChannel.textContent = video.channel;
@@ -323,7 +324,6 @@ function openPlayer(video) {
     const saved = watchLater.includes(video.id);
 
     saveBtn.classList.toggle("active", saved);
-
     saveBtn.innerHTML =
         `<i class="fa-solid fa-bookmark"></i> ${saved ? "Saved" : "Save"}`;
 
@@ -355,80 +355,57 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") closePlayer();
 });
 
-// ------------------------------------------
-// LIKES
-// ------------------------------------------
+// ==========================================
+// LIKE BUTTON
+// ==========================================
 
 likeBtn.addEventListener("click", () => {
-
     if (!currentVideoId) return;
 
     if (likedVideos.includes(currentVideoId)) {
-
-        likedVideos = likedVideos.filter(
-            id => id !== currentVideoId
-        );
-
+        likedVideos = likedVideos.filter(id => id !== currentVideoId);
         likeBtn.classList.remove("active");
         likeCount.textContent = "0";
-
         showToast("Removed from liked videos");
-
     } else {
-
         likedVideos.push(currentVideoId);
-
         likeBtn.classList.add("active");
         likeCount.textContent = "1";
-
         showToast("Added to liked videos");
     }
 
     saveState();
 });
 
-// ------------------------------------------
+// ==========================================
 // WATCH LATER
-// ------------------------------------------
+// ==========================================
 
 saveBtn.addEventListener("click", () => {
-
     if (!currentVideoId) return;
 
     if (watchLater.includes(currentVideoId)) {
-
-        watchLater = watchLater.filter(
-            id => id !== currentVideoId
-        );
-
+        watchLater = watchLater.filter(id => id !== currentVideoId);
         showToast("Removed from Watch Later");
-
     } else {
-
         watchLater.push(currentVideoId);
-
         showToast("Saved to Watch Later");
     }
 
-    saveBtn.classList.toggle(
-        "active",
-        watchLater.includes(currentVideoId)
-    );
+    const saved = watchLater.includes(currentVideoId);
 
+    saveBtn.classList.toggle("active", saved);
     saveBtn.innerHTML =
-        `<i class="fa-solid fa-bookmark"></i> ${
-            watchLater.includes(currentVideoId) ? "Saved" : "Save"
-        }`;
+        `<i class="fa-solid fa-bookmark"></i> ${saved ? "Saved" : "Save"}`;
 
     saveState();
 });
 
-// ------------------------------------------
+// ==========================================
 // SHARE
-// ------------------------------------------
+// ==========================================
 
 shareBtn.addEventListener("click", () => {
-
     if (!currentVideoId) return;
 
     const url = `https://www.youtube.com/watch?v=${currentVideoId}`;
@@ -442,25 +419,20 @@ shareBtn.addEventListener("click", () => {
     }
 });
 
-// ------------------------------------------
+// ==========================================
 // SEARCH FORM
-// ------------------------------------------
+// ==========================================
 
 searchForm.addEventListener("submit", e => {
-
     e.preventDefault();
 
     const query = searchInput.value.trim();
-
     if (!query) return;
 
     currentCategory = "all";
 
     chips.forEach(chip => {
-        chip.classList.toggle(
-            "active",
-            chip.dataset.category === "all"
-        );
+        chip.classList.toggle("active", chip.dataset.category === "all");
     });
 
     navItems.forEach(item => item.classList.remove("active"));
@@ -472,53 +444,45 @@ searchForm.addEventListener("submit", e => {
     searchYouTube(query);
 });
 
-// ------------------------------------------
+// ==========================================
 // CATEGORY CHIPS
-// ------------------------------------------
+// ==========================================
 
 chips.forEach(chip => {
-
     chip.addEventListener("click", () => {
-
         chips.forEach(c => c.classList.remove("active"));
-
         chip.classList.add("active");
 
         currentCategory = chip.dataset.category;
-
         searchInput.value = "";
 
-        const categorySearch = {
+        const searches = {
             all: "popular videos",
             music: "popular music",
-            gaming: "gaming",
+            gaming: "gaming videos",
             news: "latest news",
             tech: "technology",
-            sports: "sports",
+            sports: "sports videos",
             cooking: "cooking",
             travel: "travel"
         };
 
-        searchYouTube(categorySearch[currentCategory]);
+        searchYouTube(searches[currentCategory]);
     });
 });
 
-// ------------------------------------------
+// ==========================================
 // SIDEBAR
-// ------------------------------------------
+// ==========================================
 
 navItems.forEach(item => {
-
     item.addEventListener("click", e => {
-
         e.preventDefault();
 
         navItems.forEach(n => n.classList.remove("active"));
-
         item.classList.add("active");
 
         currentCategory = item.dataset.filter;
-
         searchInput.value = "";
 
         chips.forEach(c => c.classList.remove("active"));
@@ -530,11 +494,11 @@ navItems.forEach(item => {
         } else if (currentCategory === "watchlater") {
             displaySavedVideos(watchLater);
         } else {
-            searchYouTube(
-                currentCategory === "shorts"
-                    ? "YouTube Shorts"
-                    : "popular videos"
-            );
+            const query = currentCategory === "shorts"
+                ? "YouTube Shorts"
+                : "popular videos";
+
+            searchYouTube(query);
         }
 
         if (window.innerWidth <= 900) {
@@ -543,39 +507,68 @@ navItems.forEach(item => {
     });
 });
 
-// ------------------------------------------
+// ==========================================
 // SAVED VIDEO LISTS
-// ------------------------------------------
+// ==========================================
 
-function displaySavedVideos(ids) {
+async function displaySavedVideos(ids) {
+    const missing = ids.filter(id => !videoLibrary[id]);
 
-    const videos = ids
-        .map(id => videoLibrary[id])
-        .filter(Boolean);
+    if (missing.length && API_KEY !== "YOUR_API_KEY_HERE") {
+        try {
+            const params = new URLSearchParams({
+                part: "snippet,statistics,contentDetails",
+                id: missing.slice(0, 50).join(","),
+                key: API_KEY
+            });
 
+            const response = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?${params}`
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+                data.items.forEach(video => {
+                    videoLibrary[video.id] = {
+                        id: video.id,
+                        title: video.snippet.title,
+                        channel: video.snippet.channelTitle,
+                        avatar: "#3498db",
+                        views: formatViews(video.statistics.viewCount),
+                        time: formatDate(video.snippet.publishedAt),
+                        duration: formatDuration(video.contentDetails.duration),
+                        description: video.snippet.description,
+                        thumbnail: video.snippet.thumbnails.high?.url ||
+                            video.snippet.thumbnails.medium?.url
+                    };
+                });
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const videos = ids.map(id => videoLibrary[id]).filter(Boolean);
     renderVideos(videos);
 }
 
-// ------------------------------------------
+// ==========================================
 // MENU
-// ------------------------------------------
+// ==========================================
 
 menuBtn.addEventListener("click", () => {
-
     if (window.innerWidth > 900) {
-
         sidebar.classList.toggle("collapsed");
         mainContent.classList.toggle("expanded");
-
     } else {
-
         sidebar.classList.toggle("open");
     }
 });
 
-// ------------------------------------------
+// ==========================================
 // INITIAL SCREEN
-// ------------------------------------------
+// ==========================================
 
 videoGrid.innerHTML = `
     <div style="text-align:center;padding:60px 20px;">
