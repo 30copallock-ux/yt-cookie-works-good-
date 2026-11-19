@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Clone</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <button class="icon-btn" id="menu-btn"><i class="fa-solid fa-bars"></i></button>
+      <a href="#" class="logo">
+        <i class="fa-brands fa-youtube" style="color:#ff0000;font-size:1.8rem;"></i>
+        <span>YouTube</span>
+      </a>
+    </div>
+    <div class="header-center">
+      <form class="search-form" id="search-form">
+        <input type="text" id="search-input" placeholder="Search" autocomplete="off" />
+        <button type="submit" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </form>
+      <button class="icon-btn mic-btn"><i class="fa-solid fa-microphone"></i></button>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn"><i class="fa-solid fa-video"></i></button>
+      <button class="icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <div class="avatar" title="My Account">U</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-filter="all"><i class="fa-solid fa-house"></i><span>Home</span></a>
+      <a href="#" class="nav-item" data-filter="shorts"><i class="fa-brands fa-youtube"></i><span>Shorts</span></a>
+      <a href="#" class="nav-item" data-filter="subscriptions"><i class="fa-solid fa-film"></i><span>Subscriptions</span></a>
+      <hr />
+      <a href="#" class="nav-item" data-filter="history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a>
+      <a href="#" class="nav-item" data-filter="liked"><i class="fa-solid fa-thumbs-up"></i><span>Liked Videos</span></a>
+      <a href="#" class="nav-item" data-filter="watchlater"><i class="fa-solid fa-bookmark"></i><span>Watch Later</span></a>
+      <hr />
+      <p class="sidebar-section-title">Subscriptions</p>
+      <a href="#" class="nav-item"><span class="channel-icon" style="background:#e74c3c">T</span><span>TechWorld</span></a>
+      <a href="#" class="nav-item"><span class="channel-icon" style="background:#3498db">C</span><span>CodeWithMe</span></a>
+      <a href="#" class="nav-item"><span class="channel-icon" style="background:#2ecc71">N</span><span>NatureVibes</span></a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main-content">
+
+    <!-- PLAYER MODAL -->
+    <div class="player-overlay" id="player-overlay" style="display:none;">
+      <div class="player-container">
+        <button class="close-player" id="close-player"><i class="fa-solid fa-xmark"></i></button>
+        <div class="video-wrapper">
+          <iframe id="yt-iframe" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <div class="player-info">
+          <h2 id="player-title"></h2>
+          <div class="player-meta">
+            <span id="player-channel"></span>
+            <span id="player-views"></span>
+          </div>
+          <div class="player-actions">
+            <button class="action-btn" id="like-btn"><i class="fa-solid fa-thumbs-up"></i> <span id="like-count">0</span></button>
+            <button class="action-btn" id="dislike-btn"><i class="fa-solid fa-thumbs-down"></i></button>
+            <button class="action-btn" id="save-btn"><i class="fa-solid fa-bookmark"></i> Save</button>
+            <button class="action-btn" id="share-btn"><i class="fa-solid fa-share"></i> Share</button>
+          </div>
+          <div class="player-description" id="player-description"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHIPS -->
+    <div class="chips-bar">
+      <button class="chip active" data-category="all">All</button>
+      <button class="chip" data-category="music">Music</button>
+      <button class="chip" data-category="gaming">Gaming</button>
+      <button class="chip" data-category="news">News</button>
+      <button class="chip" data-category="tech">Tech</button>
+      <button class="chip" data-category="sports">Sports</button>
+      <button class="chip" data-category="cooking">Cooking</button>
+      <button class="chip" data-category="travel">Travel</button>
+    </div>
+
+    <!-- GRID -->
+    <div class="video-grid" id="video-grid"></div>
+    <div class="no-results" id="no-results" style="display:none;">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <p>No videos found.</p>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
